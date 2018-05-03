@@ -37,10 +37,8 @@ FUNC_DICT = {
             '-':lambda x,y: x-y,
             '/':lambda x,y: x/y,
             }
-operands = []
-digits = []
 
-def interpreta(tuplos):
+def avalia(tuplos):
     
     for tuplo in tuplos:        
         if(tuplo[0] == "define"):
@@ -48,34 +46,28 @@ def interpreta(tuplos):
 
     tup = [tuplo for tuplo in tuplos if tuplo[0] != "define"]
 
-    avalia(tup)
-    d = digits[::-1]
+    r = avalia_recursive(tup[0],0)
+    return r
 
-    while(operands != []):
-        function = FUNC_DICT[operands.pop()]
-        x = d.pop()
-        y = d.pop()
-        d.append(function(x,y))
+def avalia_recursive(tuplo,i):
+    tup = tuplo[i]
 
-    return d[0]
+    if(tup in OPERANDS):
+        return FUNC_DICT[tup](avalia_recursive(tuplo,i+1),avalia_recursive(tuplo,i+2))
     
-
-
-def avalia(lista):
-    for tuplos in lista:
-        for tup in tuplos:
-            if(isinstance(tup,tuple)):
-                avalia([tup])
-            else:
-                if(tup in OPERANDS):
-                    operands.append(tup)
-                elif(isinstance(tup, int)):
-                    digits.append(tup)
-                else:
-                    digits.append(VARS[tup] )
+    if(isinstance(tup,tuple)):
+        return avalia_recursive(tup,0)
+    
+    if(isinstance(tup, int)):
+        return tup
+    
+    return VARS[tup]
        
 
-
+def interpreta(expr):
+    tokens = tokenize(expr)
+    tuples = parse(tokens)
+    return avalia(tuples)
 
 def conversion(token):
     if(token.isdigit()):
@@ -89,7 +81,9 @@ def tests():
     tokens = tokenize(expr)
     assert parse(tokens) == [ ( 'define', 'x', 5 ) , ( '+' , ( '*', 2 , 'x') , 7 ) ]
     tuplos = parse(tokens)
-    assert interpreta(tuplos) == 17
+    assert avalia(tuplos) == 17
 
 if __name__ == "__main__":
     tests()
+    expr = "(define x 5) (define y 2) ( + (* 2 x) (* 5 y))"
+    print(interpreta(expr))
