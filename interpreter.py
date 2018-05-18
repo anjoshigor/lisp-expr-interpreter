@@ -1,4 +1,5 @@
 from math import sqrt,cos,sin
+import warnings
 
 VARS = {}
 BINARY_OPERANDS = ['*','+','-','/','<','>','eq','dif','>=','<=']
@@ -28,38 +29,52 @@ def tokenize(expr):
     processed = expr.replace("("," ( ").replace(")"," ) ")
     #splitting the string into a list
     tokens = processed.split()
-    return tokens
+    return ['(']+tokens+[')']
+
+# def parse(tokens):
+#     '''
+#     This function takes a list of tokens and returns a list of tuples using the parenthesis for that
+#     '''
+#     #list for storing the result
+#     tuplos = []
+#     #a stack to deal with nested expressions
+#     stack = []
+
+#     for token in tokens:
+#         if(token == ")"):
+#             #auxiliar list
+#             l = []
+#             #pop from stack until a left parenthesis is reached
+#             tk = stack.pop()
+#             while(tk is not "("):
+#                 l.append(tk)
+#                 tk = stack.pop()
+
+#             #if the stack is empty, the tuple is appended to the result list in the reverse form
+#             if(stack == []):
+#                 tuplos.append(tuple(l[::-1]))
+#             else:
+#                 stack.append(tuple(l[::-1]))
+            
+#             continue
+#         #if it's not a right parenthesis, just push into te stack
+#         stack.append(conversion(token))
+    
+#     return tuplos
 
 def parse(tokens):
-    '''
-    This function takes a list of tokens and returns a list of tuples using the parenthesis for that
-    '''
-    #list for storing the result
-    tuplos = []
-    #a stack to deal with nested expressions
-    stack = []
-
-    for token in tokens:
-        if(token == ")"):
-            #auxiliar list
-            l = []
-            #pop from stack until a left parenthesis is reached
-            tk = stack.pop()
-            while(tk is not "("):
-                l.append(tk)
-                tk = stack.pop()
-
-            #if the stack is empty, the tuple is appended to the result list in the reverse form
-            if(stack == []):
-                tuplos.append(tuple(l[::-1]))
-            else:
-                stack.append(tuple(l[::-1]))
-            
-            continue
-        #if it's not a right parenthesis, just push into te stack
-        stack.append(conversion(token))
     
-    return tuplos
+    elem = tokens.pop(0)
+
+    if (elem=="("):
+        lista = []
+        while (tokens[0] != ')'):
+            lista.append(parse(tokens))
+        
+        tokens.pop(0)
+        return tuple(lista)
+
+    return conversion(elem)
 
 def avalia(tuplos):
     '''
@@ -67,14 +82,26 @@ def avalia(tuplos):
     Then, it removes the variables definition and pass the expression tuple to the recursive
     function to evaluate it
     '''
-    for tuplo in tuplos:        
+    for tuplo in tuplos:
         if(tuplo[0] == "define"):
-            VARS[tuplo[1]] = tuplo[2]
-
+            try:
+                var = tuplo[2]
+                if(isinstance(var,int)):
+                    VARS[tuplo[1]] = var
+                else:
+                    VARS[tuplo[1]] = avalia_recursive(tuplo[2],0)
+            except IndexError as error:
+                raise SyntaxError("Wrong definition Syntax! for \'{}\'".format(tuplo))
+            
     tup = [tuplo for tuplo in tuplos if tuplo[0] != "define"]
 
-    r = avalia_recursive(tup[0],0)
-    return r
+    if (len(tup)==0):
+        return "Void"
+    
+    #print("TUP", tup)
+    results = [avalia_recursive(t,0) for t in tup]
+
+    return results[0] if (len(results)==1) else results
 
 def avalia_recursive(tuplo,i):
     '''
@@ -91,6 +118,9 @@ def avalia_recursive(tuplo,i):
     tup = tuplo[i]
 
     if(tup in UNARY_FUNCTIONS):
+        if(len(tuplo)>2):
+            warnings.warn("Unused variable(s) \'{}\' for unary function \'{}\'".format(tuplo[i+2::],tup))
+
         return FUNC_DICT[tup](avalia_recursive(tuplo, i+1))
 
     if(tup in CONDS):
@@ -108,13 +138,17 @@ def avalia_recursive(tuplo,i):
     if(tup in VARS):
         return VARS[tup]
 
-    return tup
-       
+    if(isinstance(tup,int)):
+        return tup
+    
+    raise ValueError('Variable \'{}\' not defined!'.format(tup))
+
 def interpreta(expr):
     tokens = tokenize(expr)
     tuples = parse(tokens)
     return avalia(tuples)
-
+        
+    
 def conversion(token):
     '''
     Simple conversion function to return the value of a digit and a string otherwise
@@ -127,17 +161,18 @@ def conversion(token):
     else:
         return token
 
-def tests():
-    '''
-    Function to test the expected value from the example provided by the assignment
-    '''
-    expr = "(define x 5) (  + (* 2 x) 7)"
-    assert tokenize(expr) == ['(', 'define', 'x', '5', ')' , '(', '+' , '(', '*' , '2', 'x', ')' , '7', ')' ]
-    tokens = tokenize(expr)
-    assert parse(tokens) == [ ( 'define', 'x', 5 ) , ( '+' , ( '*', 2 , 'x') , 7 ) ]
-    tuplos = parse(tokens)
-    assert avalia(tuplos) == 17
 
 if __name__ == "__main__":
-    expr = "(define x 2) (if ( eq x (- 3 1)) (* (cos x) 10) (* x 4))"
-    print(interpreta(expr))
+
+    while(True):
+        expression = input(">> ")
+
+        if(expression == "#"):
+            break
+        
+        ##for simpler expressions
+        if(expression[0] != '(' and expression[-1] != ')'):
+            expression = '('+expression+')'
+        
+
+        print(interpreta(expression))
