@@ -30,40 +30,11 @@ def tokenize(expr):
     #splitting the string into a list
     tokens = processed.split()
     return ['(']+tokens+[')']
-
-# def parse(tokens):
-#     '''
-#     This function takes a list of tokens and returns a list of tuples using the parenthesis for that
-#     '''
-#     #list for storing the result
-#     tuplos = []
-#     #a stack to deal with nested expressions
-#     stack = []
-
-#     for token in tokens:
-#         if(token == ")"):
-#             #auxiliar list
-#             l = []
-#             #pop from stack until a left parenthesis is reached
-#             tk = stack.pop()
-#             while(tk is not "("):
-#                 l.append(tk)
-#                 tk = stack.pop()
-
-#             #if the stack is empty, the tuple is appended to the result list in the reverse form
-#             if(stack == []):
-#                 tuplos.append(tuple(l[::-1]))
-#             else:
-#                 stack.append(tuple(l[::-1]))
-            
-#             continue
-#         #if it's not a right parenthesis, just push into te stack
-#         stack.append(conversion(token))
     
-#     return tuplos
-
 def parse(tokens):
-    
+    '''
+     This function takes a list of tokens and returns a list of tuples using the parenthesis for that
+    '''
     elem = tokens.pop(0)
 
     if (elem=="("):
@@ -98,7 +69,6 @@ def avalia(tuplos):
     if (len(tup)==0):
         return "Void"
     
-    #print("TUP", tup)
     results = [avalia_recursive(t,0) for t in tup]
 
     return results[0] if (len(results)==1) else results
@@ -163,9 +133,10 @@ def conversion(token):
 
 
 if __name__ == "__main__":
-
+    print("Expression interpreter assignment")
+    print("Type \"#\" to exit")
     while(True):
-        expression = input(">> ")
+        expression = input(">>>> ")
 
         if(expression == "#"):
             break
